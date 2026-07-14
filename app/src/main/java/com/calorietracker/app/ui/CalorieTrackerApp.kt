@@ -658,8 +658,14 @@ private fun defaultMeal(): String {
 @Composable
 private fun AddFoodSheet(onDismiss: () -> Unit, onAdd: (FoodEntry) -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var name by remember { mutableStateOf("") }
     var meal by remember { mutableStateOf(defaultMeal()) }
+
+    var name by remember {
+        mutableStateOf(
+            MEALS.firstOrNull { it.id == meal }?.label ?: ""
+        )
+    }
+
     var calories by remember { mutableStateOf("") }
     var protein by remember { mutableStateOf("") }
     var carbs by remember { mutableStateOf("") }
@@ -704,7 +710,16 @@ private fun AddFoodSheet(onDismiss: () -> Unit, onAdd: (FoodEntry) -> Unit) {
                             .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (active) PrimaryLight else Bg)
-                            .clickable { meal = m.id }
+                            .clickable {
+                                val previousLabel = MEALS.firstOrNull { it.id == meal }?.label ?: ""
+
+                                // Only replace the text if it was empty or still equal to the old meal name
+                                if (name.isBlank() || name == previousLabel) {
+                                    name = m.label
+                                }
+
+                                meal = m.id
+                            }
                             .padding(vertical = 10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
