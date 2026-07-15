@@ -15,7 +15,25 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        // Fixed debug key committed to the repo (debug.keystore at project root).
+        // This is NOT a security-sensitive keystore - the password/alias are the
+        // well-known Android debug defaults. The only reason to pin it is so
+        // every build (GitHub Actions, Android Studio, anyone's machine) signs
+        // with the SAME key, so new builds can update the app in place instead
+        // of Android rejecting them as "conflicts with an existing package".
+        getByName("debug") {
+            storeFile = rootProject.file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = false
         }

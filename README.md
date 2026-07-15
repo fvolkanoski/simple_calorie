@@ -39,6 +39,24 @@ isn't distributed through the Play Store.
 This route is better if you want to keep changing the code yourself —
 edits + Run is much faster than round-tripping through GitHub each time.
 
+## Important: one-time reinstall needed
+
+Earlier builds were signed with a different, randomly-generated key on every
+GitHub Actions run (each run is a fresh machine with no memory of the last
+one). That's why updating without uninstalling gave a package conflict error,
+and it also meant the widget-refresh code from a previous update never
+actually made it onto your phone.
+
+This version fixes that permanently by committing a fixed `debug.keystore` to
+the repo, so every build — from GitHub Actions or from Android Studio — signs
+with the same key from now on.
+
+**You'll need to uninstall the app one more time** to move onto this new,
+consistent signing key (this one time will lose your logged data, sorry —
+after this it won't happen again). From this point forward, installing a new
+APK over the old one will update in place and keep your data, no uninstall
+needed.
+
 ## Home screen widget
 
 The app now includes a small widget showing "X kcal left" (or "over" in red
