@@ -28,10 +28,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.glance.appwidget.updateAll
 import com.calorietracker.app.data.CalorieStore
 import com.calorietracker.app.model.FoodEntry
 import com.calorietracker.app.model.Goals
 import com.calorietracker.app.ui.theme.*
+import com.calorietracker.app.widget.CalorieWidget
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -50,18 +55,39 @@ private val MEALS = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalorieTrackerApp(store: CalorieStore) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     var tab by remember { mutableStateOf("today") }
     var dayOffset by remember { mutableStateOf(0) }
     var goals by remember { mutableStateOf(store.loadGoals()) }
     var history by remember { mutableStateOf(store.loadHistory()) }
-    val dateKey = remember(dayOffset) { store.todayKey(dayOffset) }
+
+    // Re-checked once a minute so the "today" key rolls over to the new date
+    // even if the app is left open across midnight, instead of only updating
+    // the next time the app is freshly opened.
+    var clockKey by remember { mutableStateOf(store.todayKey(0)) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000)
+            val k = store.todayKey(0)
+            if (k != clockKey) clockKey = k
+        }
+    }
+
+    val dateKey = remember(dayOffset, clockKey) { store.todayKey(dayOffset) }
     var entries by remember(dateKey) { mutableStateOf(store.loadEntries(dateKey)) }
     var showAdd by remember { mutableStateOf(false) }
+
+    fun refreshWidget() {
+        scope.launch { CalorieWidget().updateAll(context) }
+    }
 
     fun persistEntries(list: List<FoodEntry>) {
         entries = list
         store.saveEntries(dateKey, list)
         history = store.loadHistory()
+        refreshWidget()
     }
 
     Scaffold(
@@ -131,7 +157,11 @@ fun CalorieTrackerApp(store: CalorieStore) {
                     onDelete = { id -> persistEntries(entries.filter { it.id != id }) }
                 )
                 "progress" -> ProgressScreen(goals = goals, history = history, store = store)
-                "goals" -> GoalsScreen(goals = goals, onSave = { g -> goals = g; store.saveGoals(g) })
+                "goals" -> GoalsScreen(goals = goals, onSave = { g ->
+                    goals = g
+                    store.saveGoals(g)
+                    refreshWidget()
+                })
             }
 
             if (showAdd) {

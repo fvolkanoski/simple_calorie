@@ -39,6 +39,21 @@ isn't distributed through the Play Store.
 This route is better if you want to keep changing the code yourself —
 edits + Run is much faster than round-tripping through GitHub each time.
 
+## Home screen widget
+
+The app now includes a small widget showing "X kcal left" (or "over" in red
+if you've gone past your goal). Tapping it opens the app.
+
+To add it after installing the app:
+1. Long-press an empty spot on your home screen.
+2. Tap **Widgets**.
+3. Find **Calorie Tracker** in the list and drag its widget onto your screen.
+
+It updates automatically whenever you add food or change your goals in the
+app. It also refreshes on its own roughly every 30 minutes in the background
+(standard Android behavior for widgets), so if you log food, then don't open
+the app again for a while, it'll still be accurate.
+
 ## Project structure
 
 ```
@@ -48,6 +63,9 @@ app/src/main/java/com/calorietracker/app/
   data/CalorieStore.kt         — local persistence (SharedPreferences + JSON)
   ui/theme/Theme.kt            — color palette
   ui/CalorieTrackerApp.kt      — all screens and composables
+  widget/CalorieWidget.kt      — home screen widget (Glance) + its receiver
+app/src/main/res/xml/calorie_widget_info.xml   — widget size/behavior config
+app/src/main/res/layout/widget_loading.xml     — placeholder shown before first data load
 ```
 
 ## Customizing
