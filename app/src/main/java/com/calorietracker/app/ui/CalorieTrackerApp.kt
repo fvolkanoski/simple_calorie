@@ -29,7 +29,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.glance.appwidget.updateAll
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.calorietracker.app.data.CalorieStore
 import com.calorietracker.app.model.FoodEntry
 import com.calorietracker.app.model.Goals
@@ -81,6 +84,23 @@ fun CalorieTrackerApp(store: CalorieStore) {
 
     fun refreshWidget() {
         scope.launch { CalorieWidget().updateAll(context) }
+    }
+
+    // Belt-and-suspenders: updateAll() runs as a background WorkManager job,
+    // which can be delayed, throttled by OEM battery optimizers, or coalesced
+    // if several updates fire in quick succession. Re-pushing a refresh both
+    // when the app is left (the moment someone would glance at the widget)
+    // and when it's returned to means the widget can't drift for long even if
+    // an individual background update got dropped.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME || event == Lifecycle.Event.ON_PAUSE) {
+                refreshWidget()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     fun persistEntries(list: List<FoodEntry>) {
